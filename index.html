@@ -24,41 +24,53 @@
 
   <script>
     const LIFF_ID = "2009807969-fTLOZ9ph";
-    const WEBHOOK_URL = "https://hook.us2.make.com/9augghk4hh6pns0m5cdz5uemewsjr5nu"; // จะเปลี่ยนในขั้นตอนถัดไป
+    const WEBHOOK_URL = "https://hook.us2.make.com/9augghk4hh6pns0m5cdz5uemewsjr5nu";
 
     async function main() {
       await liff.init({ liffId: LIFF_ID });
 
       if (!liff.isLoggedIn()) {
-        liff.login();
+        liff.login({ redirectUri: window.location.href });
         return;
       }
 
       const profile = await liff.getProfile();
       const urlParams = new URLSearchParams(window.location.search);
 
+      const keyword    = urlParams.get("keyword")      || "(not provided)";
+      const matchtype  = urlParams.get("matchtype")    || "";
+      const source     = urlParams.get("utm_source")   || "";
+      const medium     = urlParams.get("utm_medium")   || "";
+      const campaign   = urlParams.get("utm_campaign") || "";
+      const content    = urlParams.get("utm_content")  || "";
+      const device     = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
+      const timestamp  = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+
       const data = {
-        lineUserId: profile.userId,
-        displayName: profile.displayName,
-        keyword: urlParams.get("keyword") || "(not provided)",
-        utm_source: urlParams.get("utm_source") || "",
-        utm_medium: urlParams.get("utm_medium") || "",
-        utm_campaign: urlParams.get("utm_campaign") || "",
-        utm_content: urlParams.get("utm_content") || "",
-        device: /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์",
-        timestamp: new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })
-        matchtype: urlParams.get("matchtype") || "",
+        lineUserId:   profile.userId,
+        displayName:  profile.displayName,
+        keyword:      keyword,
+        matchtype:    matchtype,
+        utm_source:   source,
+        utm_medium:   medium,
+        utm_campaign: campaign,
+        utm_content:  content,
+        device:       device,
+        timestamp:    timestamp
       };
 
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      try {
+        await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+      } catch (e) {
+        console.error("Webhook error:", e);
+      }
 
-      // ส่งลูกค้าไปแอด LINE OA
       liff.openWindow({
-        url: "https://line.me/R/ti/p/@aisclub", // เปลี่ยนเป็น LINE OA ID ของคุณ
+        url: "https://line.me/R/ti/p/@aisclub",
         external: false
       });
     }

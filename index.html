@@ -47,6 +47,7 @@
         utm_content: urlParams.get("utm_content") || "",
         device: /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์",
         timestamp: new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })
+        matchtype: urlParams.get("matchtype") || "",
       };
 
       await fetch(WEBHOOK_URL, {

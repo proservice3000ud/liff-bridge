@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>กำลังเชื่อมต่อ...</title>
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      background: #06C755;
+      color: white;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div>กำลังเชื่อมต่อ...</div>
+
+  <script>
+    const LIFF_ID = "2009807969-fTLOZ9ph";
+    const WEBHOOK_URL = "YOUR_MAKE_WEBHOOK_URL"; // จะเปลี่ยนในขั้นตอนถัดไป
+
+    async function main() {
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      const urlParams = new URLSearchParams(window.location.search);
+
+      const data = {
+        lineUserId: profile.userId,
+        displayName: profile.displayName,
+        keyword: urlParams.get("keyword") || "(not provided)",
+        utm_source: urlParams.get("utm_source") || "",
+        utm_medium: urlParams.get("utm_medium") || "",
+        utm_campaign: urlParams.get("utm_campaign") || "",
+        utm_content: urlParams.get("utm_content") || "",
+        device: /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์",
+        timestamp: new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })
+      };
+
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      // ส่งลูกค้าไปแอด LINE OA
+      liff.openWindow({
+        url: "https://line.me/R/ti/p/@aisclub", // เปลี่ยนเป็น LINE OA ID ของคุณ
+        external: false
+      });
+    }
+
+    main().catch(console.error);
+  </script>
+</body>
+</html>

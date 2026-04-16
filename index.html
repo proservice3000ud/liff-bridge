@@ -28,51 +28,60 @@
 
     async function main() {
 
-      // บันทึก URL params ไว้ก่อน LIFF redirect
       const currentParams = new URLSearchParams(window.location.search);
-      if (currentParams.get("keyword") || currentParams.get("utm_source")) {
-        sessionStorage.setItem("liff_params", window.location.search);
-      }
+      const keyword    = currentParams.get("keyword")      || "";
+      const matchtype  = currentParams.get("matchtype")    || "";
+      const campaign   = currentParams.get("utm_campaign") || "";
+      const content    = currentParams.get("utm_content")  || "";
+      const utmSource  = currentParams.get("utm_source")   || "";
+
+      // สร้าง redirectUri ที่มี params ติดไปด้วย
+      const redirectUri = window.location.origin + window.location.pathname
+        + "?keyword=" + encodeURIComponent(keyword)
+        + "&matchtype=" + encodeURIComponent(matchtype)
+        + "&utm_source=" + encodeURIComponent(utmSource)
+        + "&utm_campaign=" + encodeURIComponent(campaign)
+        + "&utm_content=" + encodeURIComponent(content);
 
       await liff.init({ liffId: LIFF_ID });
 
       if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.href });
+        liff.login({ redirectUri: redirectUri });
         return;
       }
 
-      // ดึง params จาก sessionStorage ถ้า URL ปัจจุบันไม่มี keyword
-      const savedSearch = sessionStorage.getItem("liff_params") || window.location.search;
-      const urlParams = new URLSearchParams(savedSearch);
+      // หลัง login แล้ว ดึง params จาก URL ปัจจุบัน
+      const params = new URLSearchParams(window.location.search);
+      const kw         = params.get("keyword")      || "";
+      const mt         = params.get("matchtype")    || "";
+      const camp       = params.get("utm_campaign") || "";
+      const cont       = params.get("utm_content")  || "";
+      const src        = params.get("utm_source")   || "";
 
       const profile    = await liff.getProfile();
-      const keyword    = urlParams.get("keyword")      || "";
-      const matchtype  = urlParams.get("matchtype")    || "";
-      const campaign   = urlParams.get("utm_campaign") || "";
-      const content    = urlParams.get("utm_content")  || "";
       const device     = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
       const timestamp  = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
 
       // แยกช่องทางอัตโนมัติ
       let channel = "Direct";
-      if (keyword) {
+      if (kw) {
         channel = "Google Ads";
       } else if (document.referrer.includes("google")) {
         channel = "Google SEO";
       } else if (document.referrer.includes("facebook") || document.referrer.includes("fb.com")) {
         channel = "Facebook";
-      } else if (urlParams.get("utm_source")) {
-        channel = urlParams.get("utm_source");
+      } else if (src) {
+        channel = src;
       }
 
       const data = {
         lineUserId:   profile.userId,
         displayName:  profile.displayName,
-        keyword:      keyword || "(not provided)",
-        matchtype:    matchtype,
+        keyword:      kw || "(not provided)",
+        matchtype:    mt,
         utm_source:   channel,
-        utm_campaign: campaign,
-        utm_content:  content,
+        utm_campaign: camp,
+        utm_content:  cont,
         device:       device,
         timestamp:    timestamp
       };
@@ -86,9 +95,6 @@
       } catch (e) {
         console.error("Webhook error:", e);
       }
-
-      // ล้าง sessionStorage หลังใช้งานแล้ว
-      sessionStorage.removeItem("liff_params");
 
       liff.openWindow({
         url: "https://line.me/R/ti/p/@aisclub",

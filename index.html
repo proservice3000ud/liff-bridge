@@ -29,29 +29,46 @@
     async function main() {
 
       const currentParams = new URLSearchParams(window.location.search);
-      const keyword   = currentParams.get("keyword")   || "";
-      const matchtype = currentParams.get("matchtype") || "";
-      const campaign  = currentParams.get("utm_campaign") || "";
+      const keyword   = currentParams.get("keyword")       || "";
+      const matchtype = currentParams.get("matchtype")     || "";
+      const campaign  = currentParams.get("utm_campaign")  || "";
 
-      // สร้าง redirectUri แบบสั้น เฉพาะ keyword และ matchtype
-      const baseUrl = window.location.origin + window.location.pathname;
-      const redirectUri = baseUrl
-        + "?kw=" + encodeURIComponent(keyword)
-        + "&mt=" + encodeURIComponent(matchtype)
-        + "&cp=" + encodeURIComponent(campaign);
-
-      await liff.init({ liffId: LIFF_ID });
+      await liff.init({ 
+        liffId: LIFF_ID,
+        withLoginOnExternalBrowser: true
+      });
 
       if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: redirectUri });
+        // ใช้ liff.state เก็บ params ข้าม Login
+        const state = encodeURIComponent(
+          "kw=" + encodeURIComponent(keyword) +
+          "&mt=" + encodeURIComponent(matchtype) +
+          "&cp=" + encodeURIComponent(campaign)
+        );
+        liff.login({ redirectUri: window.location.origin + window.location.pathname + "?liff.state=" + state });
         return;
       }
 
-      // หลัง login ดึง params จาก URL
-      const params = new URLSearchParams(window.location.search);
-      const kw   = params.get("kw") || params.get("keyword") || "";
-      const mt   = params.get("mt") || params.get("matchtype") || "";
-      const cp   = params.get("cp") || params.get("utm_campaign") || "";
+      // หลัง login ดึง params จาก liff.state หรือ URL
+      let kw = keyword;
+      let mt = matchtype;
+      let cp = campaign;
+
+      // ลอง parse จาก liff.state
+      const liffState = currentParams.get("liff.state");
+      if (liffState) {
+        try {
+          const stateParams = new URLSearchParams(decodeURIComponent(liffState));
+          kw = stateParams.get("kw") || kw;
+          mt = stateParams.get("mt") || mt;
+          cp = stateParams.get("cp") || cp;
+        } catch(e) {}
+      }
+
+      // ลอง parse จาก URL ปกติ
+      if (!kw) kw = currentParams.get("kw") || "";
+      if (!mt) mt = currentParams.get("mt") || "";
+      if (!cp) cp = currentParams.get("cp") || "";
 
       const profile   = await liff.getProfile();
       const device    = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";

@@ -37,22 +37,31 @@
       const profile = await liff.getProfile();
       const urlParams = new URLSearchParams(window.location.search);
 
-      const keyword    = urlParams.get("keyword")      || "(not provided)";
+      const keyword    = urlParams.get("keyword")      || "";
       const matchtype  = urlParams.get("matchtype")    || "";
-      const source     = urlParams.get("utm_source")   || "";
-      const medium     = urlParams.get("utm_medium")   || "";
       const campaign   = urlParams.get("utm_campaign") || "";
       const content    = urlParams.get("utm_content")  || "";
       const device     = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
       const timestamp  = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
 
+      // แยกช่องทางอัตโนมัติ
+      let channel = "Direct";
+      if (keyword) {
+        channel = "Google Ads";
+      } else if (document.referrer.includes("google")) {
+        channel = "Google SEO";
+      } else if (document.referrer.includes("facebook") || document.referrer.includes("fb.com")) {
+        channel = "Facebook";
+      } else if (urlParams.get("utm_source")) {
+        channel = urlParams.get("utm_source");
+      }
+
       const data = {
         lineUserId:   profile.userId,
         displayName:  profile.displayName,
-        keyword:      keyword,
+        keyword:      keyword || "(not provided)",
         matchtype:    matchtype,
-        utm_source:   source,
-        utm_medium:   medium,
+        utm_source:   channel,
         utm_campaign: campaign,
         utm_content:  content,
         device:       device,

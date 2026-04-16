@@ -29,19 +29,16 @@
     async function main() {
 
       const currentParams = new URLSearchParams(window.location.search);
-      const keyword    = currentParams.get("keyword")      || "";
-      const matchtype  = currentParams.get("matchtype")    || "";
-      const campaign   = currentParams.get("utm_campaign") || "";
-      const content    = currentParams.get("utm_content")  || "";
-      const utmSource  = currentParams.get("utm_source")   || "";
+      const keyword   = currentParams.get("keyword")   || "";
+      const matchtype = currentParams.get("matchtype") || "";
+      const campaign  = currentParams.get("utm_campaign") || "";
 
-      // สร้าง redirectUri ที่มี params ติดไปด้วย
-      const redirectUri = window.location.origin + window.location.pathname
-        + "?keyword=" + encodeURIComponent(keyword)
-        + "&matchtype=" + encodeURIComponent(matchtype)
-        + "&utm_source=" + encodeURIComponent(utmSource)
-        + "&utm_campaign=" + encodeURIComponent(campaign)
-        + "&utm_content=" + encodeURIComponent(content);
+      // สร้าง redirectUri แบบสั้น เฉพาะ keyword และ matchtype
+      const baseUrl = window.location.origin + window.location.pathname;
+      const redirectUri = baseUrl
+        + "?kw=" + encodeURIComponent(keyword)
+        + "&mt=" + encodeURIComponent(matchtype)
+        + "&cp=" + encodeURIComponent(campaign);
 
       await liff.init({ liffId: LIFF_ID });
 
@@ -50,17 +47,15 @@
         return;
       }
 
-      // หลัง login แล้ว ดึง params จาก URL ปัจจุบัน
+      // หลัง login ดึง params จาก URL
       const params = new URLSearchParams(window.location.search);
-      const kw         = params.get("keyword")      || "";
-      const mt         = params.get("matchtype")    || "";
-      const camp       = params.get("utm_campaign") || "";
-      const cont       = params.get("utm_content")  || "";
-      const src        = params.get("utm_source")   || "";
+      const kw   = params.get("kw") || params.get("keyword") || "";
+      const mt   = params.get("mt") || params.get("matchtype") || "";
+      const cp   = params.get("cp") || params.get("utm_campaign") || "";
 
-      const profile    = await liff.getProfile();
-      const device     = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
-      const timestamp  = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+      const profile   = await liff.getProfile();
+      const device    = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
+      const timestamp = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
 
       // แยกช่องทางอัตโนมัติ
       let channel = "Direct";
@@ -70,8 +65,6 @@
         channel = "Google SEO";
       } else if (document.referrer.includes("facebook") || document.referrer.includes("fb.com")) {
         channel = "Facebook";
-      } else if (src) {
-        channel = src;
       }
 
       const data = {
@@ -80,8 +73,7 @@
         keyword:      kw || "(not provided)",
         matchtype:    mt,
         utm_source:   channel,
-        utm_campaign: camp,
-        utm_content:  cont,
+        utm_campaign: cp,
         device:       device,
         timestamp:    timestamp
       };

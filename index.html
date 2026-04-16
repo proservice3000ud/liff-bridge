@@ -27,6 +27,13 @@
     const WEBHOOK_URL = "https://hook.us2.make.com/9augghk4hh6pns0m5cdz5uemewsjr5nu";
 
     async function main() {
+
+      // บันทึก URL params ไว้ก่อน LIFF redirect
+      const currentParams = new URLSearchParams(window.location.search);
+      if (currentParams.get("keyword") || currentParams.get("utm_source")) {
+        sessionStorage.setItem("liff_params", window.location.search);
+      }
+
       await liff.init({ liffId: LIFF_ID });
 
       if (!liff.isLoggedIn()) {
@@ -34,9 +41,11 @@
         return;
       }
 
-      const profile = await liff.getProfile();
-      const urlParams = new URLSearchParams(window.location.search);
+      // ดึง params จาก sessionStorage ถ้า URL ปัจจุบันไม่มี keyword
+      const savedSearch = sessionStorage.getItem("liff_params") || window.location.search;
+      const urlParams = new URLSearchParams(savedSearch);
 
+      const profile    = await liff.getProfile();
       const keyword    = urlParams.get("keyword")      || "";
       const matchtype  = urlParams.get("matchtype")    || "";
       const campaign   = urlParams.get("utm_campaign") || "";
@@ -77,6 +86,9 @@
       } catch (e) {
         console.error("Webhook error:", e);
       }
+
+      // ล้าง sessionStorage หลังใช้งานแล้ว
+      sessionStorage.removeItem("liff_params");
 
       liff.openWindow({
         url: "https://line.me/R/ti/p/@aisclub",

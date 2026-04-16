@@ -21,17 +21,15 @@
 </head>
 <body>
   <div>กำลังเชื่อมต่อ...</div>
-
   <script>
     const LIFF_ID = "2009807969-fTLOZ9ph";
     const WEBHOOK_URL = "https://hook.us2.make.com/9augghk4hh6pns0m5cdz5uemewsjr5nu";
-
     async function main() {
-
       const currentParams = new URLSearchParams(window.location.search);
-      const keyword   = currentParams.get("keyword")       || "";
-      const matchtype = currentParams.get("matchtype")     || "";
-      const campaign  = currentParams.get("utm_campaign")  || "";
+      const keyword   = currentParams.get("keyword")      || "";
+      const matchtype = currentParams.get("matchtype")    || "";
+      const campaign  = currentParams.get("utm_campaign") || "";
+      const channel   = currentParams.get("channel")      || "Direct";
 
       await liff.init({ 
         liffId: LIFF_ID,
@@ -39,22 +37,21 @@
       });
 
       if (!liff.isLoggedIn()) {
-        // ใช้ liff.state เก็บ params ข้าม Login
         const state = encodeURIComponent(
           "kw=" + encodeURIComponent(keyword) +
           "&mt=" + encodeURIComponent(matchtype) +
-          "&cp=" + encodeURIComponent(campaign)
+          "&cp=" + encodeURIComponent(campaign) +
+          "&ch=" + encodeURIComponent(channel)
         );
         liff.login({ redirectUri: window.location.origin + window.location.pathname + "?liff.state=" + state });
         return;
       }
 
-      // หลัง login ดึง params จาก liff.state หรือ URL
       let kw = keyword;
       let mt = matchtype;
       let cp = campaign;
+      let ch = channel;
 
-      // ลอง parse จาก liff.state
       const liffState = currentParams.get("liff.state");
       if (liffState) {
         try {
@@ -62,34 +59,25 @@
           kw = stateParams.get("kw") || kw;
           mt = stateParams.get("mt") || mt;
           cp = stateParams.get("cp") || cp;
+          ch = stateParams.get("ch") || ch;
         } catch(e) {}
       }
 
-      // ลอง parse จาก URL ปกติ
       if (!kw) kw = currentParams.get("kw") || "";
       if (!mt) mt = currentParams.get("mt") || "";
       if (!cp) cp = currentParams.get("cp") || "";
+      if (!ch) ch = currentParams.get("ch") || "Direct";
 
       const profile   = await liff.getProfile();
       const device    = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
       const timestamp = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
-
-      // แยกช่องทางอัตโนมัติ
-      let channel = "Direct";
-      if (kw) {
-        channel = "Google Ads";
-      } else if (document.referrer.includes("google")) {
-        channel = "Google SEO";
-      } else if (document.referrer.includes("facebook") || document.referrer.includes("fb.com")) {
-        channel = "Facebook";
-      }
 
       const data = {
         lineUserId:   profile.userId,
         displayName:  profile.displayName,
         keyword:      kw || "(not provided)",
         matchtype:    mt,
-        utm_source:   channel,
+        utm_source:   ch,
         utm_campaign: cp,
         device:       device,
         timestamp:    timestamp
@@ -110,7 +98,6 @@
         external: false
       });
     }
-
     main().catch(console.error);
   </script>
 </body>

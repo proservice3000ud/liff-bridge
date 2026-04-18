@@ -24,6 +24,7 @@
   <script>
     const LIFF_ID = "2009807969-fTLOZ9ph";
     const WEBHOOK_URL = "https://hook.us2.make.com/9augghk4hh6pns0m5cdz5uemewsjr5nu";
+
     async function main() {
       const currentParams = new URLSearchParams(window.location.search);
       const keyword   = currentParams.get("keyword")      || "";
@@ -83,10 +84,16 @@
         timestamp:    timestamp
       };
 
+      // ใช้ beacon ส่งข้อมูลก่อน เพื่อให้ส่งได้แม้หน้าปิด
+      const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+      navigator.sendBeacon(WEBHOOK_URL, blob);
+
+      // ส่งซ้ำด้วย fetch เผื่อ beacon ไม่รองรับ
       try {
         await fetch(WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          keepalive: true,
           body: JSON.stringify(data)
         });
       } catch (e) {

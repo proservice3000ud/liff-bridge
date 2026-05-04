@@ -43,30 +43,14 @@
       align-items: center;
       justify-content: center;
     }
-    .line-icon svg {
-      width: 24px;
-      height: 24px;
-    }
-    .line-text {
-      font-size: 16px;
-      font-weight: 600;
-    }
-    .status-text {
-      font-size: 14px;
-      opacity: 0.85;
-      margin-bottom: 24px;
-    }
-    .dots {
-      display: flex;
-      gap: 8px;
-    }
+    .line-icon svg { width: 24px; height: 24px; }
+    .line-text { font-size: 16px; font-weight: 600; }
+    .status-text { font-size: 14px; opacity: 0.85; margin-bottom: 24px; }
+    .dots { display: flex; gap: 8px; }
     .dot {
-      width: 10px;
-      height: 10px;
-      background: white;
-      border-radius: 50%;
-      opacity: 0.4;
-      animation: pulse 1.2s infinite;
+      width: 10px; height: 10px;
+      background: white; border-radius: 50%;
+      opacity: 0.4; animation: pulse 1.2s infinite;
     }
     .dot:nth-child(2) { animation-delay: 0.2s; }
     .dot:nth-child(3) { animation-delay: 0.4s; }
@@ -77,7 +61,9 @@
   </style>
 </head>
 <body>
-  <img class="logo-img" src="https://ais-fibre3.com/wp-content/uploads/2024/01/ais-fibre-agent-element-1.webp" alt="AIS Fibre3">
+  <img class="logo-img"
+       src="https://ais-fibre3.com/wp-content/uploads/2024/01/ais-fibre-agent-element-1.webp"
+       alt="AIS Fibre3">
   <div class="line-badge">
     <div class="line-icon">
       <svg viewBox="0 0 24 24" fill="#06C755">
@@ -92,63 +78,104 @@
     <div class="dot"></div>
     <div class="dot"></div>
   </div>
-
   <script>
     const LIFF_ID = "2009807969-fTLOZ9ph";
-    const WEBHOOK_URL = "https://hook.us2.make.com/9augghk4hh6pns0m5cdz5uemewsjr5nu";
+    const WEBHOOK_URL = "https://n8nb.workproservice.org/webhook/ais-liff";
+
     async function main() {
       const currentParams = new URLSearchParams(window.location.search);
-      const keyword   = currentParams.get("keyword")      || "";
-      const matchtype = currentParams.get("matchtype")    || "";
-      const campaign  = currentParams.get("utm_campaign") || "";
-      const channel   = currentParams.get("channel")      || "Direct";
-      await liff.init({ 
+      const liffState = currentParams.get("liff.state");
+      
+      let kw = '', mt = '', cp = '', ch = '', ac = '', gclid = '';
+
+      if (liffState) {
+        try {
+          let stateString = decodeURIComponent(liffState);
+          if (stateString.startsWith('?')) {
+            stateString = stateString.substring(1);
+          }
+          
+          const stateParams = new URLSearchParams(stateString);
+          kw = stateParams.get("keyword") || stateParams.get("kw") || '';
+          mt = stateParams.get("matchtype") || stateParams.get("mt") || '';
+          cp = stateParams.get("utm_campaign") || stateParams.get("cp") || '';
+          ch = stateParams.get("channel") || stateParams.get("ch") || '';
+          ac = stateParams.get("action") || stateParams.get("ac") || '';
+          gclid = stateParams.get("gclid") || stateParams.get("gc") || '';
+        } catch(e) {}
+      }
+
+      if (!ch) ch = currentParams.get("channel") || '';
+      if (!kw) kw = currentParams.get("keyword") || '';
+      if (!mt) mt = currentParams.get("matchtype") || '';
+      if (!cp) cp = currentParams.get("utm_campaign") || '';
+      if (!ac) ac = currentParams.get("action") || '';
+      if (!gclid) gclid = currentParams.get("gclid") || '';
+
+      if (!ch) {
+        ac = ac || sessionStorage.getItem('liff_action') || '';
+        kw = kw || sessionStorage.getItem('liff_keyword') || '';
+        mt = mt || sessionStorage.getItem('liff_matchtype') || '';
+        cp = cp || sessionStorage.getItem('liff_campaign') || '';
+        ch = sessionStorage.getItem('liff_channel') || '';
+        gclid = gclid || sessionStorage.getItem('liff_gclid') || '';
+      }
+
+      await liff.init({
         liffId: LIFF_ID,
         withLoginOnExternalBrowser: true
       });
+
       if (!liff.isLoggedIn()) {
-        const state = encodeURIComponent(
-          "kw=" + encodeURIComponent(keyword) +
-          "&mt=" + encodeURIComponent(matchtype) +
-          "&cp=" + encodeURIComponent(campaign) +
-          "&ch=" + encodeURIComponent(channel)
-        );
-        liff.login({ redirectUri: window.location.origin + window.location.pathname + "?liff.state=" + state });
+        sessionStorage.setItem('liff_action', ac);
+        sessionStorage.setItem('liff_keyword', kw);
+        sessionStorage.setItem('liff_matchtype', mt);
+        sessionStorage.setItem('liff_campaign', cp);
+        sessionStorage.setItem('liff_channel', ch);
+        sessionStorage.setItem('liff_gclid', gclid);
+
+        liff.login({ 
+          redirectUri: window.location.href
+        });
         return;
       }
-      let kw = keyword;
-      let mt = matchtype;
-      let cp = campaign;
-      let ch = channel;
-      const liffState = currentParams.get("liff.state");
-      if (liffState) {
-        try {
-          const stateParams = new URLSearchParams(decodeURIComponent(liffState));
-          kw = stateParams.get("kw") || kw;
-          mt = stateParams.get("mt") || mt;
-          cp = stateParams.get("cp") || cp;
-          ch = stateParams.get("ch") || ch;
-        } catch(e) {}
+
+      sessionStorage.removeItem('liff_action');
+      sessionStorage.removeItem('liff_keyword');
+      sessionStorage.removeItem('liff_matchtype');
+      sessionStorage.removeItem('liff_campaign');
+      sessionStorage.removeItem('liff_channel');
+      sessionStorage.removeItem('liff_gclid');
+
+      if (!ch && !kw && !ac) {
+        if (liff.isInClient()) {
+          liff.openWindow({ url: "https://line.me/R/ti/p/@aisclub", external: false });
+        } else {
+          window.location.href = "https://line.me/R/ti/p/@aisclub";
+        }
+        return;
       }
-      if (!kw) kw = currentParams.get("kw") || "";
-      if (!mt) mt = currentParams.get("mt") || "";
-      if (!cp) cp = currentParams.get("cp") || "";
-      if (!ch) ch = currentParams.get("ch") || "Direct";
-      const profile   = await liff.getProfile();
-      const device    = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
+
+      const profile = await liff.getProfile();
+      const device = /Mobi|Android/i.test(navigator.userAgent) ? "มือถือ" : "คอมพิวเตอร์";
       const timestamp = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+
       const data = {
-        lineUserId:   profile.userId,
-        displayName:  profile.displayName,
-        keyword:      kw || "(not provided)",
-        matchtype:    mt,
-        utm_source:   ch,
+        lineUserId: profile.userId,
+        displayName: profile.displayName,
+        keyword: kw || "(not provided)",
+        matchtype: mt,
+        utm_source: ch || 'Direct',
         utm_campaign: cp,
-        device:       device,
-        timestamp:    timestamp
+        gclid: gclid,
+        device: device,
+        timestamp: timestamp,
+        action: ac
       };
+
       const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
       navigator.sendBeacon(WEBHOOK_URL, blob);
+
       try {
         await fetch(WEBHOOK_URL, {
           method: "POST",
@@ -156,15 +183,21 @@
           keepalive: true,
           body: JSON.stringify(data)
         });
-      } catch (e) {
-        console.error("Webhook error:", e);
+      } catch(e) {}
+
+      if (liff.isInClient()) {
+        liff.openWindow({
+          url: "https://line.me/R/ti/p/@aisclub",
+          external: false
+        });
+      } else {
+        window.location.href = "https://line.me/R/ti/p/@aisclub";
       }
-      liff.openWindow({
-        url: "https://line.me/R/ti/p/@aisclub",
-        external: false
-      });
     }
-    main().catch(console.error);
+
+    main().catch(function(err) {
+      console.error(err);
+    });
   </script>
 </body>
 </html>
